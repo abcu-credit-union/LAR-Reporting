@@ -1,160 +1,129 @@
 /*************************************************************************************************************************************************************************************************************************************************************/
-
-//Both BCUSource and RCCUSource are passing identical SQL statements to their respective DNA systems, the results are then merged to create ABCUSource
-
+/*
+Both BCUSource and RCCUSource are passing identical SQL statements to their respective DNA systems, 
+the results are then merged to create ABCUSource
+*/
 let
     StartDate = Text.From(ReportDate[Date]{0}), 
-    BCUSource = Oracle.Database("BCUDatabase", [Query=
-        "SELECT
-            'BCU' AS SOURCE,
-            ACCT.BRANCHORGNBR,
-            WH_ACCTCOMMON.ACCTNBR,
-            BalSubAcct.SUBACCTNBR, 
-            WH_ACCTCOMMON.EFFDATE, 
-            WH_ACCTCOMMON.MJACCTTYPCD, 
-            WH_ACCTCOMMON.NOTEBAL, 
-            WH_ACCTCOMMON.CURRACCTSTATCD, 
-            WH_ACCTCOMMON.CURRMIACCTTYPCD,
-            BalSubAcct.BALCATCD,
-            BalSubAcct.BALTYPCD,
-            COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
-            COALESCE(WH_ACCTLOAN.TOTALPI, 0) AS TOTALPI,
-            WH_ACCTCOMMON.TAXRPTFORPERSNBR,
-            WH_ACCTCOMMON.TAXRPTFORORGNBR
-        FROM WH_ACCTCOMMON
-            INNER JOIN 
-                (SELECT
-	            ACCTSUBACCT.ACCTNBR,
-	            ACCTSUBACCT.SUBACCTNBR,
-	            ACCT.MJACCTTYPCD,
-	            ACCTSUBACCT.BALCATCD,
-	            ACCTSUBACCT.BALTYPCD
-                FROM ACCTSUBACCT
-                    INNER JOIN ACCT
-	                ON ACCTSUBACCT.ACCTNBR = ACCT.ACCTNBR
-                WHERE (ACCT.MJACCTTYPCD NOT IN ('CK', 'SAV')
-	            AND ACCTSUBACCT.BALTYPCD = 'BAL'
-	            AND ACCTSUBACCT.BALCATCD = 'NOTE')
-                OR (ACCT.MJACCTTYPCD IN ('CK', 'SAV')
-	            AND ACCTSUBACCT.BALTYPCD = 'BAL'
-	            AND ACCTSUBACCT.BALCATCD = 'LMOD')
-                OR (ACCT.MJACCTTYPCD IN ('CK', 'SAV')
-	            AND ACCTSUBACCT.BALTYPCD = 'BAL'
-	            AND ACCTSUBACCT.BALCATCD = 'ODEX')) BalSubAcct
-                ON WH_ACCTCOMMON.ACCTNBR = BalSubAcct.ACCTNBR
-            INNER JOIN ACCT
-                ON WH_ACCTCOMMON.ACCTNBR = ACCT.ACCTNBR
-            LEFT OUTER JOIN WH_ACCTLOAN
-               ON WH_ACCTCOMMON.ACCTNBR = WH_ACCTLOAN.ACCTNBR AND
-                    WH_ACCTCOMMON.EFFDATE = WH_ACCTLOAN.EFFDATE            
-        WHERE WH_ACCTCOMMON.EFFDATE = TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
-            AND WH_ACCTCOMMON.CURRACCTSTATCD <> 'CLS'
-            AND WH_ACCTCOMMON.NOTEBAL <> 0
-            AND ((WH_ACCTCOMMON.MJACCTTYPCD = 'CK' AND WH_ACCTCOMMON.NOTEBAL < 0)
-                OR (WH_ACCTCOMMON.MJACCTTYPCD = 'SAV' AND WH_ACCTCOMMON.NOTEBAL < 0)
-                OR WH_ACCTCOMMON.MJACCTTYPCD = 'CNS'
-                OR WH_ACCTCOMMON.MJACCTTYPCD = 'CML'
-                OR WH_ACCTCOMMON.MJACCTTYPCD = 'MTG')
-    "]),
-    RCCUSource = Oracle.Database("RCCUDatabase", [Query=
-        "SELECT
-            'RCCU' AS SOURCE,
-            ACCT.BRANCHORGNBR, 
-            WH_ACCTCOMMON.ACCTNBR,
-            BalSubAcct.SUBACCTNBR, 
-            WH_ACCTCOMMON.EFFDATE, 
-            WH_ACCTCOMMON.MJACCTTYPCD, 
-            WH_ACCTCOMMON.NOTEBAL, 
-            WH_ACCTCOMMON.CURRACCTSTATCD, 
-            WH_ACCTCOMMON.CURRMIACCTTYPCD,
-            BalSubAcct.BALCATCD,
-            BalSubAcct.BALTYPCD,
-            COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
-            COALESCE(WH_ACCTLOAN.TOTALPI, 0) AS TOTALPI,
-            WH_ACCTCOMMON.TAXRPTFORPERSNBR,
-            WH_ACCTCOMMON.TAXRPTFORORGNBR
-        FROM WH_ACCTCOMMON
-            INNER JOIN 
-                (SELECT
-	            ACCTSUBACCT.ACCTNBR,
-	            ACCTSUBACCT.SUBACCTNBR,
-	            ACCT.MJACCTTYPCD,
-	            ACCTSUBACCT.BALCATCD,
-	            ACCTSUBACCT.BALTYPCD
-                FROM ACCTSUBACCT
-                    INNER JOIN ACCT
-	                ON ACCTSUBACCT.ACCTNBR = ACCT.ACCTNBR
-                WHERE (ACCT.MJACCTTYPCD NOT IN ('CK', 'SAV')
-	            AND ACCTSUBACCT.BALTYPCD = 'BAL'
-	            AND ACCTSUBACCT.BALCATCD = 'NOTE')
-                OR (ACCT.MJACCTTYPCD IN ('CK', 'SAV')
-	            AND ACCTSUBACCT.BALTYPCD = 'BAL'
-	            AND ACCTSUBACCT.BALCATCD = 'LMOD')
-                OR (ACCT.MJACCTTYPCD IN ('CK', 'SAV')
-	            AND ACCTSUBACCT.BALTYPCD = 'BAL'
-	            AND ACCTSUBACCT.BALCATCD = 'ODEX')) BalSubAcct
-            ON WH_ACCTCOMMON.ACCTNBR = BalSubAcct.ACCTNBR
-            INNER JOIN ACCT
-                ON WH_ACCTCOMMON.ACCTNBR = ACCT.ACCTNBR
-            LEFT OUTER JOIN WH_ACCTLOAN
-               ON WH_ACCTCOMMON.ACCTNBR = WH_ACCTLOAN.ACCTNBR AND
-                    WH_ACCTCOMMON.EFFDATE = WH_ACCTLOAN.EFFDATE            
-        WHERE WH_ACCTCOMMON.EFFDATE = TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
-            AND WH_ACCTCOMMON.CURRACCTSTATCD <> 'CLS'
-            AND WH_ACCTCOMMON.NOTEBAL <> 0
-            AND ((WH_ACCTCOMMON.MJACCTTYPCD = 'CK' AND WH_ACCTCOMMON.NOTEBAL < 0)
-                OR (WH_ACCTCOMMON.MJACCTTYPCD = 'SAV' AND WH_ACCTCOMMON.NOTEBAL < 0)
-                OR WH_ACCTCOMMON.MJACCTTYPCD = 'CNS'
-                OR WH_ACCTCOMMON.MJACCTTYPCD = 'CML'
-                OR WH_ACCTCOMMON.MJACCTTYPCD = 'MTG')
-    "]),
+	
+	SQL =
+"SELECT
+	ACCT.BRANCHORGNBR,
+	WH_ACCTCOMMON.ACCTNBR,
+	BalSubAcct.SUBACCTNBR, 
+	WH_ACCTCOMMON.EFFDATE, 
+	WH_ACCTCOMMON.MJACCTTYPCD, 
+	WH_ACCTCOMMON.NOTEBAL, 
+	WH_ACCTCOMMON.CURRACCTSTATCD, 
+	WH_ACCTCOMMON.CURRMIACCTTYPCD,
+	BalSubAcct.BALCATCD,
+	BalSubAcct.BALTYPCD,
+	COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
+	COALESCE(WH_ACCTLOAN.TOTALPI, 0) AS TOTALPI,
+	WH_ACCTCOMMON.TAXRPTFORPERSNBR,
+	WH_ACCTCOMMON.TAXRPTFORORGNBR
+FROM WH_ACCTCOMMON
+INNER JOIN 
+	(SELECT
+	ACCTSUBACCT.ACCTNBR,
+	ACCTSUBACCT.SUBACCTNBR,
+	ACCT.MJACCTTYPCD,
+	ACCTSUBACCT.BALCATCD,
+	ACCTSUBACCT.BALTYPCD
+	FROM ACCTSUBACCT
+		INNER JOIN ACCT
+		ON ACCTSUBACCT.ACCTNBR = ACCT.ACCTNBR
+	WHERE (ACCT.MJACCTTYPCD NOT IN ('CK', 'SAV')
+	AND ACCTSUBACCT.BALTYPCD = 'BAL'
+	AND ACCTSUBACCT.BALCATCD = 'NOTE')
+	OR (ACCT.MJACCTTYPCD IN ('CK', 'SAV')
+	AND ACCTSUBACCT.BALTYPCD = 'BAL'
+	AND ACCTSUBACCT.BALCATCD = 'LMOD')
+	OR (ACCT.MJACCTTYPCD IN ('CK', 'SAV')
+	AND ACCTSUBACCT.BALTYPCD = 'BAL'
+	AND ACCTSUBACCT.BALCATCD = 'ODEX')) BalSubAcct
+	ON WH_ACCTCOMMON.ACCTNBR = BalSubAcct.ACCTNBR
+INNER JOIN ACCT
+	ON WH_ACCTCOMMON.ACCTNBR = ACCT.ACCTNBR
+LEFT OUTER JOIN WH_ACCTLOAN
+   ON WH_ACCTCOMMON.ACCTNBR = WH_ACCTLOAN.ACCTNBR AND
+		WH_ACCTCOMMON.EFFDATE = WH_ACCTLOAN.EFFDATE            
+WHERE WH_ACCTCOMMON.EFFDATE = TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
+	AND WH_ACCTCOMMON.CURRACCTSTATCD <> 'CLS'
+	AND WH_ACCTCOMMON.NOTEBAL <> 0
+	AND ((WH_ACCTCOMMON.MJACCTTYPCD = 'CK' AND WH_ACCTCOMMON.NOTEBAL < 0)
+		OR (WH_ACCTCOMMON.MJACCTTYPCD = 'SAV' AND WH_ACCTCOMMON.NOTEBAL < 0)
+		OR WH_ACCTCOMMON.MJACCTTYPCD = 'CNS'
+		OR WH_ACCTCOMMON.MJACCTTYPCD = 'CML'
+		OR WH_ACCTCOMMON.MJACCTTYPCD = 'MTG')",
+	
+    BBSource = Table.AddColumn(
+        Oracle.Database("BCUDatabase", [Query = ""&SQL&""]),
+    "Source DB", each "Beaumont", type text),
+    CCSource = Table.AddColumn(
+        Oracle.Database("RCCUDatabase", [Query= ""&SQL&""]),
+    "Source DB", each "City Centre", type text),
 
 
-    ABCUSource = Table.Combine({BCUSource, RCCUSource}),
+    ABCUSource = Table.Combine({BBSource, CCSource}),
     
     #"Added GL Numbers" = Table.ExpandTableColumn(
-        Table.NestedJoin(ABCUSource, {"BRANCHORGNBR", "MJACCTTYPCD", "CURRMIACCTTYPCD", "BALCATCD", "BALTYPCD"}, DNAGLMapping, {"COSTCENTER", "MJACCTTYPCD", "MIACCTTYPCD", "BALCATCD", "BALTYPCD"}, "GL", JoinKind.LeftOuter),
+        Table.NestedJoin(ABCUSource, {"BRANCHORGNBR", "MJACCTTYPCD", "CURRMIACCTTYPCD", "BALCATCD", "BALTYPCD"}, 
+        DNAGLMapping, {"COSTCENTER", "MJACCTTYPCD", "MIACCTTYPCD", "BALCATCD", "BALTYPCD"}, "GL", JoinKind.LeftOuter),
     "GL", {"GLNUM", "GLACCTTITLENAME"}),
     #"Added GL Balances" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added GL Numbers", {"BRANCHORGNBR", "GLNUM"}, FASQuery, {"OrgShortName", "UserAcctNum"}, "GL Balance", JoinKind.LeftOuter),
+        Table.NestedJoin(#"Added GL Numbers", {"BRANCHORGNBR", "GLNUM"}, 
+        FASQuery, {"OrgShortName", "UserAcctNum"}, "GL Balance", JoinKind.LeftOuter),
     "GL Balance", {"YTDBal"}),
 
-//ACCTSUBACCTBAL is used to provide balances.  This table seperates balances into principal, accrued interest, etc.  This is most reflective of the the "principal only balances" set out in NCCF
-    
+/*
+ACCTSUBACCTBAL is used to provide balances.  This table seperates balances into principal, accrued interest, etc.  
+This is most reflective of the the "principal only balances" set out in NCCF
+*/
+ 
     #"Added Balances" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added GL Balances", {"SOURCE", "ACCTNBR", "SUBACCTNBR"}, SubAcctBalances, {"SOURCE", "ACCTNBR", "SUBACCTNBR"}, "Balances", JoinKind.Inner),
+        Table.NestedJoin(#"Added GL Balances", {"Source DB", "ACCTNBR", "SUBACCTNBR"}, 
+        SubAcctBalances, {"Source DB", "ACCTNBR", "SUBACCTNBR"}, "Balances", JoinKind.Inner),
     "Balances", {"BALAMT"}),
     #"Added Product Balances" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added Balances", {"BRANCHORGNBR", "GLNUM"}, InflowsDNAProductBal, {"BRANCHORGNBR", "GLNUM"}, "ProductBal", JoinKind.LeftOuter),
+        Table.NestedJoin(#"Added Balances", {"BRANCHORGNBR", "GLNUM"}, 
+        InflowsDNAProductBal, {"BRANCHORGNBR", "GLNUM"}, "ProductBal", JoinKind.LeftOuter),
     "ProductBal", {"Product Balance"}),
-
-//After IFRS9 data is uploaded a report is run that spits out loan stages and account numbers.  The following code matches accounts to their IFRS 9 loan stage
-    
+/*
+After IFRS9 data is uploaded a report is run that spits out loan stages and account numbers.  The following code matches accounts to their 
+IFRS 9 loan stage
+*/    
     #"Added loan stages" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added Product Balances", {"SOURCE", "ACCTNBR"}, IFRS9LoanStages, {"Source", "Account Number"}, "Stages", JoinKind.LeftOuter),
+        Table.NestedJoin(#"Added Product Balances", {"Source DB", "ACCTNBR"}, 
+        IFRS9LoanStages, {"Source DB", "Account Number"}, "Stages", JoinKind.LeftOuter),
     "Stages", {"Stage"}, {"IFRS9 Stage"}),
-
-//An absolute function is used to translate negative balances (AOD's) to positive
-    
+/*
+An absolute function is used to translate negative balances (AOD's) to positive
+*/    
     #"Added FP Balance" = Table.AddColumn(#"Added loan stages", "FP Balance", each (Number.Abs([BALAMT])/[Product Balance]) * [YTDBal]),
-
-//Calls a function that applies the correct F&S line number to the different cash inflows
-    
-    #"Added Line Num" = Table.AddColumn(#"Added FP Balance", "Line Num", each fnInflowLine([MJACCTTYPCD], [CURRMIACCTTYPCD], [TAXRPTFORPERSNBR], [TAXRPTFORORGNBR])),
-
-//A second function is used here to provide liquidity balances.  A function is used for these that assess each accounts information and determines what cash inflows to account for
-    #"Added Liquidity Balance" = Table.AddColumn(#"Added Line Num", "Liquidity Balance", each fnLiquidityBalance([BALAMT], [Line Num], [IFRS9 Stage], [TOTALPI])),
+/*
+Calls a function that applies the correct F&S line number to the different cash inflows
+*/  
+    #"Added Line Num" = Table.AddColumn(#"Added FP Balance", "Line Num", 
+        each fnInflowLine([MJACCTTYPCD], [CURRMIACCTTYPCD], [TAXRPTFORPERSNBR], [TAXRPTFORORGNBR])),
+/*
+A second function is used here to provide liquidity balances.  A function is used for these that assess each accounts information and 
+determines what cash inflows to account for
+*/
+    #"Added Liquidity Balance" = Table.AddColumn(#"Added Line Num", "Liquidity Balance", 
+        each fnLiquidityBalance([BALAMT], [Line Num], [IFRS9 Stage], [TOTALPI])),
     #"Changed Type" = Table.TransformColumnTypes(#"Added Liquidity Balance",{{"Liquidity Balance", type number}}),
-    
-//This function creates the cash inflows, and outflows based on the criteria set out in the F&S completition guidelines. A record is produced with each outflow grouped into its respective bucket, the next line of code expands those records. 
-   
+/*    
+This function creates the cash inflows, and outflows based on the criteria set out in the F&S completition guidelines. 
+A record is produced with each outflow grouped into its respective bucket, the next line of code expands those records. 
+*/  
     #"Added Inflows" = Table.ExpandRecordColumn(
         Table.AddColumn(#"Changed Type", "Records", each fnPayments([Line Num], [Liquidity Balance], [TOTALPI], [REMAININGAMORTIZATION])),
     "Records", {"Month1", "Month2", "Month3", "Month4to6", "Month7to9", "Month10to12", "Month12Up"}),
     #"Sorted Rows" = Table.Sort(#"Added Inflows",{{"ACCTNBR", Order.Descending}, {"BALCATCD", Order.Descending}}),
-    
-//This aggregates the information for reporting purposes.
-   
+/*    
+This aggregates the information for reporting purposes.
+*/ 
     #"Grouped Rows" = Table.Group(#"Sorted Rows", {"EFFDATE", "Line Num"}, 
         {{"FP BAL", each List.Sum([FP Balance]), type number}, 
         {"LIQUIDITY BAL", each List.Sum([Liquidity Balance]), type number}, 

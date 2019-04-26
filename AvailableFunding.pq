@@ -1,4 +1,13 @@
- ABCUSource = Table.Combine({BCUSource, RCCUSource}),
+let
+BBSource = Table.AddColumn(
+     Oracle.Database("BCUDatabase", [Query = ""&AvailableFundingSQL&""]),
+"Source DB", each "Beaumont"),
+  
+CCsource = Table.AddColumn(
+     Oracle.Database("RCCUDatabase", [Query = ""&AvailableFundingSQL&""]),
+"Source DB", each "City Centre"),
+
+ABCUSource = Table.Combine({BBSource, CCSource}),
     
 //Account balances are added from the SubAcctBalances query.  These balances are what DNA considers principal only balances
     #"Added Balances" = Table.ExpandTableColumn(

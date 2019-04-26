@@ -3,7 +3,7 @@ BBSource = Table.AddColumn(
      Oracle.Database("BCUDatabase", [Query = ""&AvailableFundingSQL&""]),
 "Source DB", each "Beaumont"),
   
-CCsource = Table.AddColumn(
+CCSource = Table.AddColumn(
      Oracle.Database("RCCUDatabase", [Query = ""&AvailableFundingSQL&""]),
 "Source DB", each "City Centre"),
 

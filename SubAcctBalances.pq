@@ -1,14 +1,13 @@
-// ReportDate
-let
-    Source = Excel.CurrentWorkbook(){[Name="Table8"]}[Content],
-    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Date", type date}})
-in
-    #"Changed Type"
+/********************************************************************************************************************************************************
+4/26/2019 ZW: There are now two source columns in this query. SOURCE provided in the SQL (old method) and Source DB added through Table.AddColumn. Need
+    to go through the remaining queries and update them to Source DB method so SQL can be merged into one statement.
 
-// SubAcctBalances
+********************************************************************************************************************************************************/
+
+
 let
     StartDate = Text.From(ReportDate[Date]{0}),
-    BCUSource = Oracle.Database("BCUDatabase", [Query="
+    BCUSource = Table.AddColumn(Oracle.Database("BCUDatabase", [Query="
         SELECT
             'BCU' AS SOURCE,
             ACCTBALHIST.ACCTNBR,
@@ -28,7 +27,8 @@ let
                 ACCTBALHIST.SUBACCTNBR = MaxDateBal.SUBACCTNBR AND
                 ACCTBALHIST.EFFDATE = MaxDateBal.MaxEffDate
         WHERE ACCTBALHIST.BALAMT <> 0"]),
-    RCCUSource = Oracle.Database("RCCUDatabase", [Query="
+    "Source DB", each "Beaumont", type text),
+    RCCUSource = Table.AddColumn(Oracle.Database("RCCUDatabase", [Query="
         SELECT
             'RCCU' AS SOURCE,
             ACCTBALHIST.ACCTNBR,
@@ -48,6 +48,7 @@ let
                 ACCTBALHIST.SUBACCTNBR = MaxDateBal.SUBACCTNBR AND
                 ACCTBALHIST.EFFDATE = MaxDateBal.MaxEffDate
          WHERE ACCTBALHIST.BALAMT <> 0"]),
+    "Source DB", each "City Centre", type text),
     ABCUSource = Table.Combine({BCUSource, RCCUSource})
 in
     ABCUSource

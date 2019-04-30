@@ -20,7 +20,7 @@ let
             GL_Acct.GLAcctTitleNum,
             GL_Acct.Description,
             GL_Acct.FR2900Code,
-            GL_AcctBalHist.YTDBal
+            ABS(GL_AcctBalHist.YTDBal)
          FROM GL_ACCT
             LEFT OUTER JOIN FTI_AcctTitle
                 ON GL_Acct.InstNum = FTI_AcctTitle.InstNum
@@ -45,7 +45,7 @@ let
             GL_Acct.GLAcctTitleNum,
             GL_Acct.Description,
             GL_Acct.FR2900Code,
-            GL_AcctBalHist.YTDBal
+            ABS(GL_AcctBalHist.YTDBal)
          FROM GL_ACCT
             LEFT OUTER JOIN FTI_AcctTitle
                 ON GL_Acct.InstNum = FTI_AcctTitle.InstNum

@@ -1,106 +1,80 @@
 /*************************************************************************************************************************************************************************************************************************************************************/
 
 let
-    StartDate = Text.From(ReportDate[Date]{0}),   
-    BCUSource = Oracle.Database("BCUDatabase", [Query=
-        "SELECT
-            'BCU' AS SOURCE, 
-            ACCT.BRANCHORGNBR,
-            WH_ACCTCOMMON.ACCTNBR,
-            BalSubAcct.SUBACCTNBR, 
-            WH_ACCTCOMMON.EFFDATE, 
-            WH_ACCTCOMMON.MJACCTTYPCD, 
-            WH_ACCTCOMMON.NOTEBAL, 
-            WH_ACCTCOMMON.CURRACCTSTATCD, 
-            WH_ACCTCOMMON.CURRMIACCTTYPCD,
-            WH_ACCTCOMMON.PRODUCT,
-            BalSubAcct.BALCATCD,
-            BalSubAcct.BALTYPCD,
-            MJMIACCTTYP.CURRENCYCD,
-            COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
-            WH_ACCTCOMMON.TAXRPTFORPERSNBR,
-            WH_ACCTCOMMON.TAXRPTFORORGNBR
-        FROM WH_ACCTCOMMON
-            LEFT OUTER JOIN 
-                (SELECT
-                    ACCTNBR,
-                    SUBACCTNBR,
-                    BALCATCD,
-                    BALTYPCD
-                FROM ACCTSUBACCT
-                WHERE BALTYPCD = 'BAL'
-                    AND BALCATCD = 'NOTE')
-                BalSubAcct
-                ON WH_ACCTCOMMON.ACCTNBR = BalSubAcct.ACCTNBR
-            INNER JOIN ACCT
-                ON WH_ACCTCOMMON.ACCTNBR = ACCT.ACCTNBR
-            LEFT OUTER JOIN MJMIACCTTYP
-                ON WH_ACCTCOMMON.MJACCTTYPCD = MJMIACCTTYP.MJACCTTYPCD
-                AND WH_ACCTCOMMON.CURRMIACCTTYPCD = MJMIACCTTYP.MIACCTTYPCD          
-        WHERE WH_ACCTCOMMON.EFFDATE = TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
-            AND WH_ACCTCOMMON.NOTEBAL > 0
-            AND WH_ACCTCOMMON.MJACCTTYPCD IN ('CK', 'SAV', 'TD')
-            AND WH_ACCTCOMMON.CURRMIACCTTYPCD NOT IN ('ECSC', 'ECSM', 'FCSC', 'FCSM')
-            AND (WH_ACCTCOMMON.TAXRPTFORORGNBR NOT IN (1402, 786)
-                OR WH_ACCTCOMMON.TAXRPTFORORGNBR IS NULL)
-            AND LOWER(WH_ACCTCOMMON.PRODUCT) NOT LIKE '%internal%'
-    "]),
-    RCCUSource = Oracle.Database("RCCUDatabase", [Query=
-        "SELECT
-            'RCCU' AS SOURCE,
-            ACCT.BRANCHORGNBR, 
-            WH_ACCTCOMMON.ACCTNBR,
-            BalSubAcct.SUBACCTNBR, 
-            WH_ACCTCOMMON.EFFDATE, 
-            WH_ACCTCOMMON.MJACCTTYPCD, 
-            WH_ACCTCOMMON.NOTEBAL, 
-            WH_ACCTCOMMON.CURRACCTSTATCD, 
-            WH_ACCTCOMMON.CURRMIACCTTYPCD,
-            WH_ACCTCOMMON.PRODUCT,
-            BalSubAcct.BALCATCD,
-            BalSubAcct.BALTYPCD,
-            MJMIACCTTYP.CURRENCYCD,
-            COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
-            WH_ACCTCOMMON.TAXRPTFORPERSNBR,
-            WH_ACCTCOMMON.TAXRPTFORORGNBR
-        FROM WH_ACCTCOMMON
-            LEFT OUTER JOIN 
-                (SELECT
-                    ACCTNBR,
-                    SUBACCTNBR,
-                    BALCATCD,
-                    BALTYPCD
-                FROM ACCTSUBACCT
-                WHERE BALTYPCD = 'BAL'
-                    AND BALCATCD = 'NOTE')
-                BalSubAcct
-                ON WH_ACCTCOMMON.ACCTNBR = BalSubAcct.ACCTNBR
-            INNER JOIN ACCT
-                ON WH_ACCTCOMMON.ACCTNBR = ACCT.ACCTNBR
-            LEFT OUTER JOIN MJMIACCTTYP
-                ON WH_ACCTCOMMON.MJACCTTYPCD = MJMIACCTTYP.MJACCTTYPCD
-                AND WH_ACCTCOMMON.CURRMIACCTTYPCD = MJMIACCTTYP.MIACCTTYPCD           
-        WHERE WH_ACCTCOMMON.EFFDATE = TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
-            AND WH_ACCTCOMMON.NOTEBAL > 0
-            AND WH_ACCTCOMMON.MJACCTTYPCD IN ('CK', 'SAV', 'TD')
-            AND WH_ACCTCOMMON.CURRMIACCTTYPCD NOT IN ('ECSC', 'ECSM', 'FCSC', 'FCSM')
-            AND LOWER(WH_ACCTCOMMON.PRODUCT) NOT LIKE '%internal%'
-    "]),
-    ABCUSource = Table.Combine({BCUSource, RCCUSource}),
+    StartDate = Text.From(ReportDate[Date]{0}),
+
+    SQL =
+"SELECT
+    'BCU' AS SOURCE, 
+    ACCT.BRANCHORGNBR,
+    WH_ACCTCOMMON.ACCTNBR,
+    BalSubAcct.SUBACCTNBR, 
+    WH_ACCTCOMMON.EFFDATE, 
+    WH_ACCTCOMMON.MJACCTTYPCD, 
+    WH_ACCTCOMMON.NOTEBAL, 
+    WH_ACCTCOMMON.CURRACCTSTATCD, 
+    WH_ACCTCOMMON.CURRMIACCTTYPCD,
+    WH_ACCTCOMMON.PRODUCT,
+    BalSubAcct.BALCATCD,
+    BalSubAcct.BALTYPCD,
+    MJMIACCTTYP.CURRENCYCD,
+    COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
+    WH_ACCTCOMMON.TAXRPTFORPERSNBR,
+    WH_ACCTCOMMON.TAXRPTFORORGNBR
+FROM WH_ACCTCOMMON
+LEFT OUTER JOIN 
+    (SELECT
+        ACCTNBR,
+        SUBACCTNBR,
+        BALCATCD,
+        BALTYPCD
+    FROM ACCTSUBACCT
+    WHERE
+        BALTYPCD = 'BAL'
+        AND BALCATCD = 'NOTE') BalSubAcct
+    ON WH_ACCTCOMMON.ACCTNBR = BalSubAcct.ACCTNBR
+INNER JOIN ACCT
+    ON WH_ACCTCOMMON.ACCTNBR = ACCT.ACCTNBR
+LEFT OUTER JOIN MJMIACCTTYP
+    ON WH_ACCTCOMMON.MJACCTTYPCD = MJMIACCTTYP.MJACCTTYPCD
+    AND WH_ACCTCOMMON.CURRMIACCTTYPCD = MJMIACCTTYP.MIACCTTYPCD          
+WHERE 
+    WH_ACCTCOMMON.EFFDATE = TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
+    AND WH_ACCTCOMMON.NOTEBAL > 0
+    AND WH_ACCTCOMMON.MJACCTTYPCD IN ('CK', 'SAV', 'TD')
+    AND WH_ACCTCOMMON.CURRMIACCTTYPCD NOT IN ('ECSC', 'ECSM', 'FCSC', 'FCSM')
+    AND (WH_ACCTCOMMON.TAXRPTFORORGNBR NOT IN (1402, 786)
+        OR WH_ACCTCOMMON.TAXRPTFORORGNBR IS NULL)
+    AND LOWER(WH_ACCTCOMMON.PRODUCT) NOT LIKE '%internal%'",
+   
+    BBSource = Table.AddColumn(
+        Oracle.Database("BCUDatabase", [Query = ""&SQL&""]),
+    "Source DB", each "Beaumont", type text),
+    CCSource = Table.AddColumn(
+        Oracle.Database("RCCUDatabase", [Query = ""&SQL&""]),
+    "Source DB", each "City Centre", type text),
+    ABCUSource = Table.Combine({BBSource, CCSource}),
 
     #"Added GL Numbers" = Table.ExpandTableColumn(
-        Table.NestedJoin(ABCUSource, {"BRANCHORGNBR", "MJACCTTYPCD", "CURRMIACCTTYPCD", "BALCATCD", "BALTYPCD"}, DNAGLMapping, {"COSTCENTER", "MJACCTTYPCD", "MIACCTTYPCD", "BALCATCD", "BALTYPCD"}, "GL", JoinKind.LeftOuter),
+        Table.NestedJoin(ABCUSource, {"BRANCHORGNBR", "MJACCTTYPCD", "CURRMIACCTTYPCD", "BALCATCD", "BALTYPCD"}, 
+            DNAGLMapping, {"COSTCENTER", "MJACCTTYPCD", "MIACCTTYPCD", "BALCATCD", "BALTYPCD"}, 
+        "GL", JoinKind.LeftOuter),
     "GL", {"GLNUM", "GLACCTTITLENAME"}),
     #"Added GL Balances" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added GL Numbers", {"BRANCHORGNBR", "GLNUM"}, FASQuery, {"OrgShortName", "UserAcctNum"}, "GL Balance", JoinKind.LeftOuter),
+        Table.NestedJoin(#"Added GL Numbers", {"BRANCHORGNBR", "GLNUM"}, FASQuery, {"OrgShortName", "UserAcctNum"}, 
+        "GL Balance", JoinKind.LeftOuter),
     "GL Balance", {"YTDBal"}),
 
 //Account balances are added from the SubAcctBalances query.  These balances are what DNA considers principal only balances
     #"Added Balances" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added GL Balances", {"SOURCE", "ACCTNBR", "SUBACCTNBR"}, SubAcctBalances, {"SOURCE", "ACCTNBR", "SUBACCTNBR"}, "Balances", JoinKind.LeftOuter),
+        Table.NestedJoin(#"Added GL Balances", {"Source DB", "ACCTNBR", "SUBACCTNBR"}, 
+            SubAcctBalances, {"Source DB", "ACCTNBR", "SUBACCTNBR"}, 
+        "Balances", JoinKind.LeftOuter),
     "Balances", {"BALAMT"}),
     #"Added Product Balances" = Table.ExpandTableColumn(
-        Table.NestedJoin(#"Added Balances", {"BRANCHORGNBR", "GLNUM"}, OutflowDNAProductBal, {"BRANCHORGNBR", "GLNUM"}, "ProductBal", JoinKind.LeftOuter),
+        Table.NestedJoin(#"Added Balances", {"BRANCHORGNBR", "GLNUM"}, 
+            OutflowDNAProductBal, {"BRANCHORGNBR", "GLNUM"}, 
+        "ProductBal", JoinKind.LeftOuter),
     "ProductBal", {"Product Balance"}),
 
 

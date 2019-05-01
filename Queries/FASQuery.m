@@ -1,17 +1,9 @@
-// ReportDate
-let
-    Source = Excel.CurrentWorkbook(){[Name="Table8"]}[Content],
-    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Date", type date}})
-in
-    #"Changed Type"
-
-// FASQuery
 let
     StartDate = Date.ToText(ReportDate[Date]{0}, "yyyyMM"),
     BCUSource = Sql.Database("10.207.18.10", "AB332PFTI", [Query=
         "SELECT
             'BCU' AS SOURCE,
-            GL_AcctBalHist.MonthYYYYMM, 
+            GL_AcctBalHist.MonthYYYYMM,
             GL_Acct.InstNum,
             GL_Acct.GLAcctNum,
             GL_Acct.OrgNum,
@@ -20,7 +12,7 @@ let
             GL_Acct.GLAcctTitleNum,
             GL_Acct.Description,
             GL_Acct.FR2900Code,
-            ABS(GL_AcctBalHist.YTDBal) ""YTDBal""
+            GL_AcctBalHist.YTDBal ""YTDBal""
          FROM GL_ACCT
             LEFT OUTER JOIN FTI_AcctTitle
                 ON GL_Acct.InstNum = FTI_AcctTitle.InstNum
@@ -32,11 +24,12 @@ let
                 ON GL_Acct.InstNum = GL_AcctBalHist.InstNum
                     AND GL_Acct.GLAcctNum = GL_AcctBalHist.GLAcctNum
         WHERE GL_AcctBalHist.MonthYYYYMM = '"&StartDate&"'
-            AND FTI_Org.OrgShortName <> 0"]),
+            AND FTI_Org.OrgShortName <> 0
+            AND GL_AcctBalHist.YTDBal <> 0"]),
     RCCUSource = Sql.Database("10.207.18.10", "AB242PFTI", [Query=
         "SELECT
             'RCCU' AS SOURCE,
-            GL_AcctBalHist.MonthYYYYMM, 
+            GL_AcctBalHist.MonthYYYYMM,
             GL_Acct.InstNum,
             GL_Acct.GLAcctNum,
             GL_Acct.OrgNum,
@@ -45,7 +38,7 @@ let
             GL_Acct.GLAcctTitleNum,
             GL_Acct.Description,
             GL_Acct.FR2900Code,
-            ABS(GL_AcctBalHist.YTDBal) ""YTDBal""
+            GL_AcctBalHist.YTDBal ""YTDBal""
          FROM GL_ACCT
             LEFT OUTER JOIN FTI_AcctTitle
                 ON GL_Acct.InstNum = FTI_AcctTitle.InstNum
@@ -57,8 +50,9 @@ let
                 ON GL_Acct.InstNum = GL_AcctBalHist.InstNum
                     AND GL_Acct.GLAcctNum = GL_AcctBalHist.GLAcctNum
         WHERE GL_AcctBalHist.MonthYYYYMM = '"&StartDate&"'
-            AND FTI_Org.OrgShortName <> 0"]),
-    
+            AND FTI_Org.OrgShortName <> 0
+            AND GL_AcctBalHist.YTDBal <> 0"]),
+
     ABCUSource = Table.Combine({BCUSource, RCCUSource}),
     #"Removed Columns" = Table.RemoveColumns(ABCUSource,{"InstNum", "GLAcctNum", "OrgNum", "GLAcctTitleNum"}),
     #"Added Mappings" = Table.ExpandTableColumn(
@@ -66,10 +60,3 @@ let
     "F&S Line", {"FSMS Line"})
 in
     #"Added Mappings"
-
-// GLMappings
-let
-    Source = Excel.CurrentWorkbook(){[Name="Table3"]}[Content],
-    #"Changed Type" = Table.TransformColumnTypes(Source,{{"FR2900 Code", type text}})
-in
-    #"Changed Type"

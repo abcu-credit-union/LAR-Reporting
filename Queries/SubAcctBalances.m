@@ -21,11 +21,17 @@ let
                     SUBACCTNBR,
                     MAX(EFFDATE) AS MaxEffDate
                 FROM ACCTBALHIST
-                WHERE EFFDATE <= TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
-                GROUP BY ACCTNBR, SUBACCTNBR) MaxDateBal
-            ON ACCTBALHIST.ACCTNBR = MaxDateBal.ACCTNBR AND
-                ACCTBALHIST.SUBACCTNBR = MaxDateBal.SUBACCTNBR AND
-                ACCTBALHIST.EFFDATE = MaxDateBal.MaxEffDate
+                WHERE
+                    EFFDATE <= TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
+                GROUP BY
+                    ACCTNBR, 
+                    SUBACCTNBR) MaxDateBal
+            ON ACCTBALHIST.ACCTNBR = MaxDateBal.ACCTNBR
+                AND ACCTBALHIST.SUBACCTNBR = MaxDateBal.SUBACCTNBR
+                AND ACCTBALHIST.EFFDATE = MaxDateBal.MaxEffDate
+            INNER JOIN ACCT
+                ON ACCTBALHIST.ACCTNBR = ACCT.ACCTNBR
+                AND ACCT.CURRACCTSTATCD NOT IN ('CO', 'CLS')
         WHERE ACCTBALHIST.BALAMT <> 0"]),
     "Source DB", each "Beaumont", type text),
     RCCUSource = Table.AddColumn(Oracle.Database("RCCUDatabase", [Query="
@@ -42,11 +48,17 @@ let
                     SUBACCTNBR,
                     MAX(EFFDATE) AS MaxEffDate
                 FROM ACCTBALHIST
-                WHERE EFFDATE <= TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
-                GROUP BY ACCTNBR, SUBACCTNBR) MaxDateBal
-            ON ACCTBALHIST.ACCTNBR = MaxDateBal.ACCTNBR AND
-                ACCTBALHIST.SUBACCTNBR = MaxDateBal.SUBACCTNBR AND
-                ACCTBALHIST.EFFDATE = MaxDateBal.MaxEffDate
+                WHERE
+                    EFFDATE <= TO_DATE('"&StartDate&"', 'MM/DD/YYYY')
+                GROUP BY
+                    ACCTNBR,
+                    SUBACCTNBR) MaxDateBal
+            ON ACCTBALHIST.ACCTNBR = MaxDateBal.ACCTNBR
+                AND ACCTBALHIST.SUBACCTNBR = MaxDateBal.SUBACCTNBR
+                AND ACCTBALHIST.EFFDATE = MaxDateBal.MaxEffDate
+            INNER JOIN ACCT
+                ON ACCTBALHIST.ACCTNBR = ACCT.ACCTNBR
+                AND ACCT.CURRACCTSTATCD NOT IN ('CO', 'CLS')
          WHERE ACCTBALHIST.BALAMT <> 0"]),
     "Source DB", each "City Centre", type text),
     ABCUSource = Table.Combine({BCUSource, RCCUSource})

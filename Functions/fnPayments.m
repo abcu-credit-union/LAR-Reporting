@@ -54,9 +54,9 @@ let
                 FinalPmtRecord = [Month1 = BAL, Month2 = 0, Month3 = 0, Month4to6 = 0, Month7to9 = 0, Month10to12 = 0, Month12Up = 0]
             in
                 FinalPmtRecord
-        
+
         /*The following section is outflows for line 2841 on the F&S - these are in a declining balance basis*/
-        else if Line = 2841 then
+        else if List.Contains({2841, 2847}, Line) then
             let
                 Mth1 = BAL * 0.03,
                 Mth2 = (BAL - Mth1) * 0.01,
@@ -74,9 +74,30 @@ let
                 Record = [Month1 = Mth1, Month2 = Mth2, Month3 = Mth3, Month4to6 = (Mth4 + Mth5 + Mth6), Month7to9 = (Mth7 + Mth8 + Mth9), Month10to12 = (Mth10 + Mth11 + Mth12), Month12Up = Mth12Up]
             in
                 Record
+/*
+Outflows for line 2844 - Business Deposits - "No Specific Maturity"
+*/
+        else if List.Contains({2844, 2847}, Line) then
+            let
+                Mth1 = BAL * 0.03,
+                Mth2 = (BAL - Mth1) * 0.03,
+                Mth3 = (BAL - (Mth1 + Mth2)) * 0.03,
+                Mth4 = (BAL - (Mth1 + Mth2 + Mth3)) * 0.03,
+                Mth5 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4)) * 0.03,
+                Mth6 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5)) * 0.03,
+                Mth7 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6)) * 0.03,
+                Mth8 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7)) * 0.03,
+                Mth9 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8)) * 0.03,
+                Mth10 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8 + Mth9)) * 0.03,
+                Mth11 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8 + Mth9 + Mth10)) * 0.03,
+                Mth12 = (BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8 + Mth9 + Mth10 + Mth11)) * 0.03,
+                Mth12Up = BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8 + Mth9 + Mth10 + Mth11 + Mth12),
+                Record = [Month1 = Mth1, Month2 = Mth2, Month3 = Mth3, Month4to6 = (Mth4 + Mth5 + Mth6), Month7to9 = (Mth7 + Mth8 + Mth9), Month10to12 = (Mth10 + Mth11 + Mth12), Month12Up = Mth12Up]
+            in
+                Record
 
         /* Outflows for line 2842 on the F&S*/
-        else if Line = 2842 then
+        else if List.Contains({2842, 2845, 2848}, Line) then
             let
                 Mth1 = BAL * 0.03,
                 Mth2 = (BAL - Mth1) * 0.01,
@@ -96,7 +117,7 @@ let
                 Record
 
         /*Outflows for line 2843 on the F&S*/
-        else if Line = 2843 then
+        else if List.Contains({2843}, Line) then
             let
                 Mth1 = if AMOR <= 1 then
                     BAL * 0.03
@@ -104,52 +125,108 @@ let
                     0,
                 Mth2 = if AMOR = 2 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth3 = if AMOR = 3 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth4 = if AMOR = 4 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth5 = if AMOR = 5 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth6 = if AMOR = 6 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth7 = if AMOR = 7 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth8 = if AMOR = 8 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth9 = if AMOR = 9 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth10 = if AMOR = 10 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth11 = if AMOR = 11 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth12 = if AMOR = 12 then
                     BAL * 0.01
-                else 
+                else
                     0,
                 Mth12Up = BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8 + Mth9 + Mth10 + Mth11 + Mth12),
                 Record = [Month1 = Mth1, Month2 = Mth2, Month3 = Mth3, Month4to6 = (Mth4 + Mth5 + Mth6), Month7to9 = (Mth7 + Mth8 + Mth9), Month10to12 = (Mth10 + Mth11 + Mth12), Month12Up = Mth12Up]
             in
-                Record  
+                Record
+
+        else if List.Contains({2846, 2851}, Line) then
+            let
+                Mth1 = if AMOR <= 1 then
+                    BAL
+                else
+                    0,
+                Mth2 = if AMOR = 2 then
+                    BAL
+                else
+                    0,
+                Mth3 = if AMOR = 3 then
+                    BAL
+                else
+                    0,
+                Mth4 = if AMOR = 4 then
+                    BAL
+                else
+                    0,
+                Mth5 = if AMOR = 5 then
+                    BAL
+                else
+                    0,
+                Mth6 = if AMOR = 6 then
+                    BAL
+                else
+                    0,
+                Mth7 = if AMOR = 7 then
+                    BAL
+                else
+                    0,
+                Mth8 = if AMOR = 8 then
+                    BAL
+                else
+                    0,
+                Mth9 = if AMOR = 9 then
+                    BAL
+                else
+                    0,
+                Mth10 = if AMOR = 10 then
+                    BAL
+                else
+                    0,
+                Mth11 = if AMOR = 11 then
+                    BAL
+                else
+                    0,
+                Mth12 = if AMOR = 12 then
+                    BAL
+                else
+                    0,
+                Mth12Up = BAL - (Mth1 + Mth2 + Mth3 + Mth4 + Mth5 + Mth6 + Mth7 + Mth8 + Mth9 + Mth10 + Mth11 + Mth12),
+                Record = [Month1 = Mth1, Month2 = Mth2, Month3 = Mth3, Month4to6 = (Mth4 + Mth5 + Mth6), Month7to9 = (Mth7 + Mth8 + Mth9), Month10to12 = (Mth10 + Mth11 + Mth12), Month12Up = Mth12Up]
+            in
+                Record
+
         else
             [Month1 = 0, Month2 = 0, Month3 = 0, Month4to6 = 0, Month7to9 = 0, Month10to12 = 0, Month12Up = 0]
     in

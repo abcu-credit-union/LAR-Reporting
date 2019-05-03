@@ -18,7 +18,7 @@ let
                 Balance
             else if List.Contains({2823, 2824, 2831}, Line) then
                 0
-            else if ALPI = 0 or Stage <> 1 then
+            else if ALPI = 0 or List.Contains({2, 3}, Stage) then
                 0
             else
                 9999

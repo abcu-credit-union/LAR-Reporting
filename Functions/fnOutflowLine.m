@@ -31,6 +31,17 @@
                     and (Text.Contains(Text.Lower(product), "redeem")
                         or Text.Contains(Text.Lower(product), "reddem")),
                 2846},
+                {depType = "Wholesale"
+                    and List.Contains({"CK", "SAV"}, major),
+                2847},
+                {depType = "Wholesale"
+                    and Text.Contains(Text.Lower(product), "non") = false,
+                2848},
+                {depType = "Wholesale"
+                    and Text.Contains(Text.Lower(product), "non")
+                    and (Text.Contains(Text.Lower(product), "redeem")
+                        or Text.Contains(Text.Lower(product), "reddem")),
+                2851},
                 {true, 9999}
             },
 

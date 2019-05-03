@@ -8,15 +8,16 @@ let
     ACCT.BRANCHORGNBR,
     WH_ACCTCOMMON.ACCTNBR,
     ACCTSUBACCT.SUBACCTNBR,
-	WH_ACCTCOMMON.EFFDATE,
+    WH_ACCTCOMMON.EFFDATE,
     WH_ACCTCOMMON.PRODUCT,
-	WH_ACCTCOMMON.MJACCTTYPCD,
+    WH_ACCTCOMMON.MJACCTTYPCD,
     WH_ACCTCOMMON.CURRMIACCTTYPCD,
+    WH_ACCTCOMMON.NOTEINTRATE,
     ACCTSUBACCT.BALCATCD,
     SUBSTR(GLACCT.XREFGLACCTNBR, 0, 8) ""GL Number"",
     SUBSTR(GLACCT.XREFGLACCTNBR, -3) ""Cost Center"",
-	COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
-	COALESCE(WH_ACCTLOAN.TOTALPI, 0) AS TOTALPI,
+    COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
+    COALESCE(WH_ACCTLOAN.TOTALPI, 0) AS TOTALPI,
     (CASE WHEN WH_ACCTCOMMON.TAXRPTFORPERSNBR IS NOT NULL THEN 'P' || WH_ACCTCOMMON.TAXRPTFORPERSNBR
         ELSE 'O' || WH_ACCTCOMMON.TAXRPTFORORGNBR END) ""Entity""
 FROM WH_ACCTCOMMON
@@ -151,9 +152,39 @@ Weighted average is used to convert DNA balances to principle only FAS balances
         "Class", JoinKind.LeftOuter),
     "Class", {"Deposit Type"}),
 
-    #"Added Line Numbers" = Table.AddColumn(#"Joined Deposit Class", "Line Number",
-        each fnOutflowLine([MJACCTTYPCD], [CURRMIACCTTYPCD], [PRODUCT], [Entity], [Deposit Type]), type number)
+    #"Checked for Wholesale Deposits" = Table.FromRecords(
+        Table.TransformRows(#"Joined Deposit Class", (r) => Record.TransformFields(r,
+            {{"Deposit Type", each if _ = "Business"
+                and (r[FP Balance] >= 1000000
+                    and r[NOTEINTRATE] >= 0.0395
+                    and List.Contains({"CK", "SAV"}, r[MJACCTTYPCD]))
+                or (r[FP Balance] >= 1000000
+                    and r[MJACCTTYPCD] = "TD"
+                    and r[REMAININGAMORTIZATION] <= 12) then
+                "Wholesale" else _}}))),
 
+    #"Added Line Numbers" = Table.AddColumn(#"Checked for Wholesale Deposits", "Line Num",
+        each fnOutflowLine([MJACCTTYPCD], [CURRMIACCTTYPCD], [PRODUCT], [Entity], [Deposit Type]), type number),
+
+
+    #"Added Liquidity Balance" = Table.AddColumn(#"Added Line Numbers", "Liquidity Balance",
+        each [FP Balance], type number),
+
+    #"Added Outflows" = Table.ExpandRecordColumn(
+        Table.AddColumn(#"Added Liquidity Balance", "Outflows",
+            each fnPayments([Line Num], [Liquidity Balance], [TOTALPI], [REMAININGAMORTIZATION])),
+    "Outflows", {"Month1", "Month2", "Month3", "Month4to6", "Month7to9", "Month10to12", "Month12Up"}),
+
+    #"Grouped Results" = Table.Group(#"Added Outflows", {"EFFDATE", "Line Num"},
+           {{"FP BAL", each List.Sum([FP Balance]), type number},
+           {"LIQUIDITY BAL", each List.Sum([Liquidity Balance]), type number},
+           {"MTH 1", each List.Sum([Month1]), type number},
+           {"MTH 2", each List.Sum([Month2]), type number},
+           {"MTH 3", each List.Sum([Month3]), type number},
+           {"MTHS 4 TO 6", each List.Sum([Month4to6]), type number},
+           {"MTHS 7 TO 9", each List.Sum([Month7to9]), type number},
+           {"MTHS 10 TO 12", each List.Sum([Month10to12]), type number},
+           {"MTHS 12+", each List.Sum([Month12Up]), type number}})
 
 in
-    #"Added Line Numbers"
+    #"Grouped Results"

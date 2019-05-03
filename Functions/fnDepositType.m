@@ -1,6 +1,6 @@
-(entity, name, balance, accounts) =>
+(entity, balance, accounts) =>
 let
-    depositType = 
+    depositType =
         {
             {Text.Contains(entity, "P"), "Retail"},
             {balance >=5000000, "Business"},

@@ -5,16 +5,46 @@
 */
 /*************************************************************************************************************************************************************************************************************************************************************/
 
-let
-    fnOutflowLine = (MJACCTTYPCD, CURRMIACCTTYPCD, PRODUCT, PERSNBR, ORGNBR) =>
-        let
-           lineNum = if List.Contains({"CK", "SAV"}, MJACCTTYPCD) then
-                2841
-            else if Text.Contains(Text.Lower(PRODUCT), "non") = false and Text.Contains(Text.Lower(PRODUCT), "redeemable") then
-                2842
-            else
-                2843
-        in 
-            lineNum
-in
-    fnOutflowLine
+(major, minor, product, entity, depType) =>
+    let
+        outflowLine =
+            {
+                {List.Contains({"Retail", "Small Business"}, depType)
+                    and List.Contains({"CK", "SAV"}, major),
+                2841},
+                {List.Contains({"Retail", "Small Business"}, depType)
+                    and Text.Contains(Text.Lower(product), "non") = false,
+                2842},
+                {List.Contains({"Retail", "Small Business"}, depType)
+                    and Text.Contains(Text.Lower(product), "non")
+                    and (Text.Contains(Text.Lower(product), "redeem")
+                        or Text.Contains(Text.Lower(product), "reddem")),
+                2843},
+                {depType = "Business"
+                    and List.Contains({"CK", "SAV"}, major),
+                2844},
+                {depType = "Business"
+                    and Text.Contains(Text.Lower(product), "non") = false,
+                2845},
+                {depType = "Business"
+                    and Text.Contains(Text.Lower(product), "non")
+                    and (Text.Contains(Text.Lower(product), "redeem")
+                        or Text.Contains(Text.Lower(product), "reddem")),
+                2846},
+                {depType = "Wholesale"
+                    and List.Contains({"CK", "SAV"}, major),
+                2847},
+                {depType = "Wholesale"
+                    and Text.Contains(Text.Lower(product), "non") = false,
+                2848},
+                {depType = "Wholesale"
+                    and Text.Contains(Text.Lower(product), "non")
+                    and (Text.Contains(Text.Lower(product), "redeem")
+                        or Text.Contains(Text.Lower(product), "reddem")),
+                2851},
+                {true, 9999}
+            },
+
+        Result = List.First(List.Select(outflowLine, each _{0} = true)){1}
+    in
+        Result

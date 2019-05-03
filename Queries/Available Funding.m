@@ -11,11 +11,11 @@ let
 "SELECT
 	WH_ACCTCOMMON.ACCTNBR,
         WH_ACCTCOMMON.OWNERNAME,
-	BalSubAcct.SUBACCTNBR, 
-	WH_ACCTCOMMON.EFFDATE, 
-	WH_ACCTCOMMON.MJACCTTYPCD, 
-	WH_ACCTCOMMON.NOTEBAL, 
-	WH_ACCTCOMMON.CURRACCTSTATCD, 
+	BalSubAcct.SUBACCTNBR,
+	WH_ACCTCOMMON.EFFDATE,
+	WH_ACCTCOMMON.MJACCTTYPCD,
+	WH_ACCTCOMMON.NOTEBAL,
+	WH_ACCTCOMMON.CURRACCTSTATCD,
 	WH_ACCTCOMMON.CURRMIACCTTYPCD,
 	WH_ACCTCOMMON.PRODUCT,
 	BalSubAcct.BALCATCD,
@@ -25,7 +25,7 @@ let
 	(CASE WHEN WH_ACCTCOMMON.TAXRPTFORPERSNBR IS NOT NULL THEN 'P' || WH_ACCTCOMMON.TAXRPTFORPERSNBR
             ELSE 'O' || WH_ACCTCOMMON.TAXRPTFORORGNBR END) ""Entity""
 FROM WH_ACCTCOMMON
-LEFT OUTER JOIN 
+LEFT OUTER JOIN
 	(SELECT
 		ACCTNBR,
 		SUBACCTNBR,
@@ -59,7 +59,7 @@ old structure of BCU and RCCU instead of Beaumont and City Centre.
     "Source DB", each "City Centre"),
     ABCUSource = Table.Combine({BBSource, CCSource}),
 
-/*    
+/*
 Account balances are added from the SubAcctBalances query.  These balances are what DNA considers principal only balances
 4/26/2019 ZW: Adjusted join to use "Source DB" column on both tables
 */
@@ -69,7 +69,7 @@ Account balances are added from the SubAcctBalances query.  These balances are w
     "Balances", {"BALAMT"}),
 
 /*
-Currency information is pulled on an account level.  
+Currency information is pulled on an account level.
 After USD and CAD balances have been identified this code translates USD to CAD using the month end FX rate
 */
 
@@ -97,7 +97,7 @@ This is a basic if statement that checks the remaining maturity on the deposit t
             {"Accounts", each List.Distinct([CURRMIACCTTYPCD])}}),
         #"Added Deposit Class" = Table.AddColumn(#"Grouped Entities", "Deposit Type",
             each Record.Field(
-                fnDepositType([Entity], [OWNERNAME], [Balance], [Accounts]),
+                fnDepositType([Entity], [Balance], [Accounts]),
             "Value")),
 
 /*
@@ -106,9 +106,9 @@ Subquery is joined to the main table in the #"Joined Deposit Class" step
 
     #"Joined Deposit Class" = Table.ExpandTableColumn(
         Table.NestedJoin(#"Converted USD to CAD", {"Entity", "Source DB"}, #"Added Deposit Class", {"Entity", "Source DB"}, "Class", JoinKind.LeftOuter),
-    "Class", {"Deposit Type"}),        
+    "Class", {"Deposit Type"}),
 
-    #"Added Line Number" = Table.AddColumn(#"Joined Deposit Class", "Line Number", 
+    #"Added Line Number" = Table.AddColumn(#"Joined Deposit Class", "Line Number",
         each if [REMAININGAMORTIZATION] = null and [Deposit Type] <> "Business" then
             2701
         else if [REMAININGAMORTIZATION] < 12 and [Deposit Type] <> "Business" then

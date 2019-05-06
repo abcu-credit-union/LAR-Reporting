@@ -16,7 +16,7 @@ let
     ACCTSUBACCT.BALCATCD,
     SUBSTR(GLACCT.XREFGLACCTNBR, 0, 8) ""GL Number"",
     SUBSTR(GLACCT.XREFGLACCTNBR, -3) ""Cost Center"",
-    COALESCE(CEIL(MONTHS_BETWEEN(ACCT.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
+    COALESCE(CEIL(MONTHS_BETWEEN(WH_ACCTCOMMON.DATEMAT, TO_DATE('"&StartDate&"','MM/DD/YYYY'))), 0) AS RemainingAmortization,
     COALESCE(WH_ACCTLOAN.TOTALPI, 0) AS TOTALPI,
     (CASE WHEN WH_ACCTCOMMON.TAXRPTFORPERSNBR IS NOT NULL THEN 'P' || WH_ACCTCOMMON.TAXRPTFORPERSNBR
         ELSE 'O' || WH_ACCTCOMMON.TAXRPTFORORGNBR END) ""Entity""
@@ -156,7 +156,7 @@ Weighted average is used to convert DNA balances to principle only FAS balances
         Table.TransformRows(#"Joined Deposit Class", (r) => Record.TransformFields(r,
             {{"Deposit Type", each if _ = "Business"
                 and (r[FP Balance] >= 1000000
-                    and r[NOTEINTRATE] >= 0.0395
+                    and r[NOTEINTRATE] >= 0.0005
                     and List.Contains({"CK", "SAV"}, r[MJACCTTYPCD]))
                 or (r[FP Balance] >= 1000000
                     and r[MJACCTTYPCD] = "TD"

@@ -156,12 +156,15 @@ Weighted average is used to convert DNA balances to principle only FAS balances
         Table.TransformRows(#"Joined Deposit Class", (r) => Record.TransformFields(r,
             {{"Deposit Type", each if _ = "Business"
                 and (r[FP Balance] >= 1000000
-                    and r[NOTEINTRATE] >= 0.0395
+                    and r[NOTEINTRATE] >= 0.00005
                     and List.Contains({"CK", "SAV"}, r[MJACCTTYPCD]))
                 or (r[FP Balance] >= 1000000
                     and r[MJACCTTYPCD] = "TD"
                     and r[REMAININGAMORTIZATION] <= 12) then
                 "Wholesale" else _}}))),
 
+    #"Grouped Rows1" = Table.Group(#"Checked for Wholesale Deposits", {"Deposit Type"},
+        {{"Balance", each List.Sum([FP Balance]), type number}})
+
 in
-    #"Checked for Wholesale Deposits"
+    #"Grouped Rows1"
